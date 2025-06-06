@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Comparator;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -103,7 +105,7 @@ public class FranchiseServiceImpl implements FranchiseService {
     public Mono<FranchiseDto> removeProduct(String franchiseId, String branchId, String productId) {
         return franchiseRepository.findById(franchiseId)
                 .switchIfEmpty(Mono.error(new EntityNotFoundException("Franchise not found with id: " + franchiseId)))
-                .map(franchise -> {
+                .<Franchise>handle((franchise, sink) -> {
                     Branch branch = franchise.getBranches().stream()
                             .filter(b -> b.getId().equals(branchId))
                             .findFirst()
@@ -111,9 +113,10 @@ public class FranchiseServiceImpl implements FranchiseService {
 
                     boolean removed = branch.removeProduct(productId);
                     if (!removed) {
-                        throw new EntityNotFoundException("Product not found with id: " + productId);
+                        sink.error(new EntityNotFoundException("Product not found with id: " + productId));
+                        return;
                     }
-                    return franchise;
+                    sink.next(franchise);
                 })
                 .flatMap(franchiseRepository::save)
                 .map(this::mapToDto);
@@ -123,7 +126,7 @@ public class FranchiseServiceImpl implements FranchiseService {
     public Mono<FranchiseDto> updateProductStock(String franchiseId, String branchId, String productId, Integer newStock) {
         return franchiseRepository.findById(franchiseId)
                 .switchIfEmpty(Mono.error(new EntityNotFoundException("Franchise not found with id: " + franchiseId)))
-                .map(franchise -> {
+                .<Franchise>handle((franchise, sink) -> {
                     Branch branch = franchise.getBranches().stream()
                             .filter(b -> b.getId().equals(branchId))
                             .findFirst()
@@ -135,11 +138,12 @@ public class FranchiseServiceImpl implements FranchiseService {
                             .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + productId));
 
                     if (newStock < 0) {
-                        throw new InvalidDataException("Stock cannot be negative");
+                        sink.error(new InvalidDataException("Stock cannot be negative"));
+                        return;
                     }
 
                     product.setStock(newStock);
-                    return franchise;
+                    sink.next(franchise);
                 })
                 .flatMap(franchiseRepository::save)
                 .map(this::mapToDto);
@@ -174,16 +178,16 @@ public class FranchiseServiceImpl implements FranchiseService {
                 .flatMapMany(franchise ->
                         Flux.fromIterable(franchise.getBranches())
                                 .filter(branch -> !branch.getProducts().isEmpty())
-                                .map(branch -> {
+                                .mapNotNull(branch -> {
                                     Product topProduct = branch.getProducts().stream()
-                                            .max((p1, p2) -> Integer.compare(p1.getStock(), p2.getStock()))
+                                            .max(Comparator.comparingInt(Product::getStock))
                                             .orElse(null);
 
                                     return topProduct != null ?
                                             new TopProductDto(topProduct.getName(), branch.getName(), topProduct.getStock()) :
                                             null;
                                 })
-                                .filter(topProduct -> topProduct != null)
+                                .filter(Objects::nonNull)
                 );
     }
 
