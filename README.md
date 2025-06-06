@@ -61,7 +61,7 @@ Sistema de gestión de franquicias desarrollado con **Spring Boot 3.5** y **Java
 
 ```bash
 # 1. Clonar el repositorio
-git clone <repository-url>
+git clone https://github.com/Tulio-Rangel/accenture.git
 cd accenture
 
 # 2. Dar permisos de ejecución al script
