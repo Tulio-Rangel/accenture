@@ -1,0 +1,57 @@
+# Directorios de Maven
+target/
+!target/*.jar
+
+# Archivos de IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Logs
+*.log
+logs/
+
+# Base de datos local
+*.db
+*.sqlite
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentación
+README.md
+*.md
+
+# Tests
+src/test/
+
+# Archivos de configuración local
+.env
+.env.local
+application-local.properties
+application-dev.properties
+
+# Node modules (si existen)
+node_modules/
+npm-debug.log*
+
+# Postman collections
+*.postman_collection.json
+

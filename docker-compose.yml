@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Aplicación Spring Boot
+  accenture-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: accenture-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - USER=${MONGO_USER:-admin}
+      - PASSWORD=${MONGO_PASSWORD:-password}
+      - DB=${MONGO_DB:-accenture}
+      - SPRING_DATA_MONGODB_URI=mongodb://admin:password@mongodb:27017/accenture?authSource=admin
+    depends_on:
+      - mongodb
+    networks:
+      - accenture-network
+    restart: unless-stopped
+
+  # Base de datos MongoDB
+  mongodb:
+    image: mongo:7.0
+    container_name: accenture-mongodb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+      - MONGO_INITDB_DATABASE=accenture
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongodb/init:/docker-entrypoint-initdb.d
+    networks:
+      - accenture-network
+    restart: unless-stopped
+
+  # MongoDB Admin Interface
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: accenture-mongo-express
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mongodb
+    networks:
+      - accenture-network
+    restart: unless-stopped
+
+networks:
+  accenture-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
